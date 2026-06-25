@@ -7,12 +7,14 @@
 
 ## Ce dont vous avez besoin
 
-| Élément | Détail |
-|---------|--------|
-| Ordinateur | Windows 10 ou Windows 11 |
-| Connexion | Internet (uniquement pour la première installation) |
-| Espace disque | Environ 100 Mo |
+
+| Élément             | Détail                                                  |
+| ------------------- | ------------------------------------------------------- |
+| Ordinateur          | Windows 10 ou Windows 11                                |
+| Connexion           | Internet (uniquement pour la première installation)     |
+| Espace disque       | Environ 100 Mo                                          |
 | Clé USB (optionnel) | Pour copier l'application et l'utiliser sur un autre PC |
+
 
 ---
 
@@ -20,7 +22,7 @@
 
 ### Étape 1 : Télécharger le projet
 
-1. Allez sur GitHub : https://github.com/mahdjateo87/new
+1. Allez sur GitHub : [https://github.com/mahdjateo87/new](https://github.com/mahdjateo87/new)
 2. Cliquez sur le bouton vert **Code**
 3. Choisissez **Download ZIP**
 4. Extrayez le fichier ZIP sur votre Bureau (clic droit → Extraire tout)
@@ -31,7 +33,7 @@ Vous obtenez un dossier nommé `new` ou `new-main`.
 
 ### Étape 2 : Installer Python (si pas déjà installé)
 
-1. Allez sur https://www.python.org/downloads/
+1. Allez sur [https://www.python.org/downloads/](https://www.python.org/downloads/)
 2. Téléchargez **Python 3.12** (ou plus récent)
 3. **IMPORTANT** : cochez la case ✅ **"Add Python to PATH"** en bas de la fenêtre
 4. Cliquez **Install Now**
@@ -50,19 +52,19 @@ Vous devez voir : `Python 3.12.x`
 ### Étape 3 : Installer l'application
 
 1. Ouvrez le dossier extrait
-2. Dans la barre d'adresse en haut, tapez `cmd` et appuyez sur **Entrée**  
-   → Une fenêtre noire s'ouvre directement dans le bon dossier
-3. Tapez ces commandes **une par une** :
+2. Dans la barre d'adresse en haut, tapez `cmd` et appuyez sur **Entrée**
+  → Une fenêtre noire s'ouvre directement dans le bon dossier
+3. Tapez ces commandes **une par une** (appuyez sur Entrée après chaque ligne) :
 
 ```
 pip install -r requirements.txt
 ```
 
 ```
-python app/main.py
+python app\main.py
 ```
 
-4. L'application s'ouvre ! 🎉
+4. L'application s'ouvre !
 
 ---
 
@@ -70,12 +72,14 @@ python app/main.py
 
 Une fenêtre s'affiche. Remplissez :
 
-| Champ | Exemple |
-|-------|---------|
-| Nom de la clinique | Clinique ALOUIA |
-| Lieu | Birtouta |
-| Chef de service | Mahdjate Oussama |
-| Seuil surcharge | 176 (heures par mois) |
+
+| Champ              | Exemple               |
+| ------------------ | --------------------- |
+| Nom de la clinique | Clinique ALOUIA       |
+| Lieu               | Birtouta              |
+| Chef de service    | Mahdjate Oussama      |
+| Seuil surcharge    | 176 (heures par mois) |
+
 
 Cliquez **Enregistrer et démarrer**.
 
@@ -106,8 +110,8 @@ Sur un PC avec Python installé :
 installer\build_windows.bat
 ```
 
-3. Attendez 2 à 5 minutes
-4. Le fichier est créé dans : `installer\dist\CliniqueAlouiaGardes.exe`
+1. Attendez 2 à 5 minutes
+2. Le fichier est créé dans : `installer\dist\CliniqueAlouiaGardes.exe`
 
 ### Étape 2 : Copier sur clé USB
 
@@ -128,6 +132,7 @@ python demo.py
 ```
 
 Cette commande affiche dans la console :
+
 - L'import de votre fichier Excel exemple
 - Le comptage des heures par personne
 - Les fichiers Excel et PDF générés
@@ -159,6 +164,7 @@ Cette commande affiche dans la console :
 ### Colonnes par service (comme votre Excel)
 
 **Instrumentiste :**
+
 ```
 Journalier 08H-16H          │  Nuit 16H-08H
 mat      │ chir │ chir │ chir │  mat     │ chir
@@ -166,12 +172,14 @@ salle 4  │ s.1  │ s.2  │ s.3  │  salle 4 │
 ```
 
 **Femme d'hygiène :**
+
 ```
 Journalier 08H-16H    │  Nuit 16H-08H
 mat  │ chir           │  mat  │ chir
 ```
 
 **Stérilisation :**
+
 ```
 08H-16H  │  Nuit 16H-08H  │  24H  │  2 sur 2
 ```
@@ -194,13 +202,15 @@ Pour sauvegarder : copiez ce dossier sur une clé USB.
 
 ## Problèmes fréquents
 
-| Problème | Solution |
-|----------|----------|
-| `python` n'est pas reconnu | Réinstallez Python en cochant **Add to PATH** |
-| L'application ne s'ouvre pas | Essayez `pythonw app/main.py` |
-| Erreur à l'import Excel | Vérifiez que le fichier est bien `.xlsx` (pas `.xls`) |
-| Email ne part pas | Renseignez le serveur SMTP dans **Paramètres** |
-| Pas de raccourci bureau | Relancez `install_windows.bat` en administrateur |
+
+| Problème                     | Solution                                              |
+| ---------------------------- | ----------------------------------------------------- |
+| `python` n'est pas reconnu   | Réinstallez Python en cochant **Add to PATH**         |
+| L'application ne s'ouvre pas | Essayez `pythonw app/main.py`                         |
+| Erreur à l'import Excel      | Vérifiez que le fichier est bien `.xlsx` (pas `.xls`) |
+| Email ne part pas            | Renseignez le serveur SMTP dans **Paramètres**        |
+| Pas de raccourci bureau      | Relancez `install_windows.bat` en administrateur      |
+
 
 ---
 
