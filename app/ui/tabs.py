@@ -138,6 +138,7 @@ class GardeTab(ttk.Frame):
                 entry.grid(row=row_idx, column=col_idx, padx=0, pady=0, sticky="nsew")
                 pos = (row_idx - 1, col_idx - 1)
                 self._cells[pos] = {"entry": entry, "var": var, "day": day, "key": key, "orig": var.get()}
+                entry.bind("<FocusIn>", lambda e, en=entry: self.after_idle(lambda: self._select_all(en)))
                 entry.bind("<FocusOut>", lambda e, p=pos: self._commit_cell(p))
                 entry.bind("<Return>", lambda e, p=pos: self._move(p, 1, 0))
                 entry.bind("<Down>", lambda e, p=pos: self._move(p, 1, 0))
@@ -146,6 +147,14 @@ class GardeTab(ttk.Frame):
                 entry.bind("<Shift-Tab>", lambda e, p=pos: self._move(p, 0, -1))
                 entry.bind("<ISO_Left_Tab>", lambda e, p=pos: self._move(p, 0, -1))
                 entry.bind("<Double-Button-1>", lambda e, p=pos: self._open_editor(p))
+
+    @staticmethod
+    def _select_all(entry: tk.Entry) -> None:
+        try:
+            entry.select_range(0, "end")
+            entry.icursor("end")
+        except tk.TclError:
+            pass
 
     @staticmethod
     def _parse_cell_text(text: str) -> tuple[str, str]:
