@@ -6,7 +6,9 @@ from datetime import datetime
 from tkinter import filedialog, messagebox, simpledialog, ttk
 from typing import Any
 
-from app.core.config import MONTHS_FR, STATUS_LABELS, VACATION_TYPES
+from copy import deepcopy
+
+from app.core.config import DEFAULT_SERVICES, MONTHS_FR, STATUS_LABELS, VACATION_TYPES
 from app.core.excel_io import export_comptage_excel, export_garde_excel, import_garde_excel
 from app.core.models import AppConfig, Assignment
 from app.core.pdf_forms import generate_demande_conge_pdf, generate_planning_conge_pdf
@@ -798,7 +800,32 @@ class ParametresTab(ttk.Frame):
         row += 1
         ttk.Button(frame, text="Modifier service sélectionné", command=self.edit_service).grid(row=row, column=0, columnspan=2, sticky="w", pady=4)
         row += 1
+        ttk.Button(
+            frame,
+            text="Réinitialiser les services (modèle par défaut)",
+            command=self.reset_services,
+        ).grid(row=row, column=0, columnspan=2, sticky="w", pady=4)
+        row += 1
         ttk.Button(frame, text="Enregistrer les paramètres", command=self.save).grid(row=row, column=0, columnspan=2, pady=12)
+
+    def _refresh_services_list(self) -> None:
+        self.services_list.delete(0, "end")
+        for service in self.config.services:
+            vacs = ", ".join(v["code"] for v in service.get("vacations", []))
+            self.services_list.insert("end", f"{service['nom']} : {vacs}")
+
+    def reset_services(self) -> None:
+        if not messagebox.askyesno(
+            "Réinitialiser",
+            "Remplacer la configuration des services par le modèle par défaut "
+            "(colonnes et bandes type Excel) ?\n\n"
+            "Vos plannings déjà enregistrés ne sont pas supprimés.",
+        ):
+            return
+        self.config.services = deepcopy(DEFAULT_SERVICES)
+        self._refresh_services_list()
+        self.on_save(self.config)
+        messagebox.showinfo("Réinitialiser", "Services réinitialisés au modèle par défaut.")
 
     def edit_service(self) -> None:
         selection = self.services_list.curselection()
@@ -809,10 +836,7 @@ class ParametresTab(ttk.Frame):
         self.wait_window(dialog)
         if dialog.result:
             self.config.services[idx] = dialog.result
-            self.services_list.delete(0, "end")
-            for service in self.config.services:
-                vacs = ", ".join(v["code"] for v in service.get("vacations", []))
-                self.services_list.insert("end", f"{service['nom']} : {vacs}")
+            self._refresh_services_list()
 
     def save(self) -> None:
         try:
@@ -881,11 +905,17 @@ class ServiceEditor(tk.Toplevel):
             width=12,
         ).grid(row=0, column=1, sticky="w")
 
-        ttk.Label(row_frame, text="Colonnes (séparées par ;) :").grid(row=1, column=0, sticky="w")
-        cols_var = tk.StringVar(value="; ".join(vacation.get("colonnes", [])))
-        ttk.Entry(row_frame, textvariable=cols_var, width=45).grid(row=1, column=1, sticky="w")
+        ttk.Label(row_frame, text="Titre de la bande :").grid(row=1, column=0, sticky="w")
+        label_var = tk.StringVar(value=vacation.get("label", ""))
+        ttk.Entry(row_frame, textvariable=label_var, width=45).grid(row=1, column=1, sticky="w")
 
-        self.vacation_frames.append({"code_var": code_var, "cols_var": cols_var, "frame": row_frame})
+        ttk.Label(row_frame, text="Colonnes (séparées par ;) :").grid(row=2, column=0, sticky="w")
+        cols_var = tk.StringVar(value="; ".join(vacation.get("colonnes", [])))
+        ttk.Entry(row_frame, textvariable=cols_var, width=45).grid(row=2, column=1, sticky="w")
+
+        self.vacation_frames.append(
+            {"code_var": code_var, "label_var": label_var, "cols_var": cols_var, "frame": row_frame}
+        )
 
     def _save(self) -> None:
         nom = self.nom_var.get().strip()
@@ -898,7 +928,11 @@ class ServiceEditor(tk.Toplevel):
             if not cols:
                 messagebox.showerror("Erreur", "Chaque vacation doit avoir au moins une colonne.")
                 return
-            vacations.append({"code": item["code_var"].get(), "colonnes": cols})
+            vacation = {"code": item["code_var"].get(), "colonnes": cols}
+            label = item["label_var"].get().strip()
+            if label:
+                vacation["label"] = label
+            vacations.append(vacation)
         self.service["nom"] = nom
         self.service["vacations"] = vacations
         self.result = self.service
