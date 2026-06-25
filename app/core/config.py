@@ -37,20 +37,37 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "label": "Journalier 08H - 16H",
+                "label": "JOURNALIER DE 08H À 16H",
                 "colonnes": [
-                    "mat - salle 4",
-                    "chir - salle 1",
-                    "chir - salle 2",
-                    "chir - salle 3",
+                    "salle 1",
+                    "salle 2",
+                    "salle 3",
+                    "salle 4",
+                    "salle 5",
+                    "SALLE 6",
+                ],
+            },
+            {
+                "code": "24H",
+                "label": "24H",
+                "colonnes": [
+                    "SALLE 6 24H",
+                ],
+            },
+            {
+                "code": "16H22H",
+                "label": "16H/22H AS",
+                "colonnes": [
+                    "AS",
                 ],
             },
             {
                 "code": "16H08H",
-                "label": "Nuit 16H - 08H",
+                "label": "NUIT DE 16H À 08H",
                 "colonnes": [
-                    "mat - salle 4",
-                    "chir",
+                    "salle 1",
+                    "salle 2",
+                    "salle 3",
                 ],
             },
         ],
@@ -61,7 +78,7 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "label": "Journalier 08H - 16H",
+                "label": "JOURNALIER DE 08H À 16H",
                 "colonnes": [
                     "mat",
                     "chir",
@@ -69,7 +86,7 @@ DEFAULT_SERVICES = [
             },
             {
                 "code": "16H08H",
-                "label": "Nuit 16H - 08H",
+                "label": "NUIT DE 16H À 08H",
                 "colonnes": [
                     "mat",
                     "chir",
@@ -83,14 +100,14 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "label": "Journalier 08H - 16H",
+                "label": "JOURNALIER DE 08H À 16H",
                 "colonnes": [
                     "jour 08H-16H",
                 ],
             },
             {
                 "code": "16H08H",
-                "label": "Nuit 16H - 08H",
+                "label": "NUIT DE 16H À 08H",
                 "colonnes": [
                     "nuit 16H-08H",
                 ],
@@ -104,7 +121,7 @@ DEFAULT_SERVICES = [
             },
             {
                 "code": "2SUR2",
-                "label": "2 sur 2",
+                "label": "2 SUR 2",
                 "colonnes": [
                     "2 sur 2",
                 ],
