@@ -687,7 +687,11 @@ class ServiceEditor(tk.Toplevel):
         frame = ttk.Frame(self, padding=12)
         frame.pack(fill="both", expand=True)
 
-        ttk.Label(frame, text=f"Service : {service['nom']}").pack(anchor="w", pady=(0, 8))
+        name_row = ttk.Frame(frame)
+        name_row.pack(fill="x", pady=(0, 8))
+        ttk.Label(name_row, text="Nom du service :").pack(side="left")
+        self.nom_var = tk.StringVar(value=service.get("nom", ""))
+        ttk.Entry(name_row, textvariable=self.nom_var, width=30).pack(side="left", padx=6)
 
         self.vacation_frames: list[dict] = []
         list_frame = ttk.Frame(frame)
@@ -721,6 +725,10 @@ class ServiceEditor(tk.Toplevel):
         self.vacation_frames.append({"code_var": code_var, "cols_var": cols_var, "frame": row_frame})
 
     def _save(self) -> None:
+        nom = self.nom_var.get().strip()
+        if not nom:
+            messagebox.showerror("Erreur", "Le nom du service est obligatoire.")
+            return
         vacations = []
         for item in self.vacation_frames:
             cols = [c.strip() for c in item["cols_var"].get().split(";") if c.strip()]
@@ -728,6 +736,7 @@ class ServiceEditor(tk.Toplevel):
                 messagebox.showerror("Erreur", "Chaque vacation doit avoir au moins une colonne.")
                 return
             vacations.append({"code": item["code_var"].get(), "colonnes": cols})
+        self.service["nom"] = nom
         self.service["vacations"] = vacations
         self.result = self.service
         self.destroy()
