@@ -34,6 +34,21 @@ class GardeTab(ttk.Frame):
         ttk.Button(toolbar, text="Imprimer", command=self.print_garde).pack(side="left", padx=4)
         ttk.Button(toolbar, text="Envoyer par mail", command=self.email_garde).pack(side="left", padx=4)
 
+        hint = ttk.Label(
+            self,
+            text=(
+                "Astuce (comme Excel) : cliquez une case et tapez le nom — "
+                "Entrée/↓ pour descendre, Tab pour la case suivante, flèches pour se déplacer. "
+                "Préfixes : [A]=absence, [R]=retard, [C]=congé. Double-clic = options détaillées. "
+                "Les modifications sont enregistrées automatiquement."
+            ),
+            font=("Segoe UI", 8),
+            foreground="#555555",
+            wraplength=1150,
+            justify="left",
+        )
+        hint.pack(fill="x", padx=10, pady=(0, 2))
+
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True, padx=8, pady=8)
 
@@ -71,6 +86,7 @@ class GardeTab(ttk.Frame):
     def _render_table(self) -> None:
         for child in self.table.winfo_children():
             child.destroy()
+        self._cells: dict[tuple[int, int], dict[str, Any]] = {}
 
         service_id = self.get_service_id()
         year, month = self.get_period()
@@ -79,33 +95,127 @@ class GardeTab(ttk.Frame):
             return
 
         columns = iter_service_columns(service)
-        ttk.Label(self.table, text="Date", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, padx=2, pady=2, sticky="nsew")
+        tk.Label(
+            self.table, text="Date", font=("Segoe UI", 10, "bold"), relief="ridge", bd=1, bg="#dfe6f0"
+        ).grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         for idx, (_code, col_name, _key) in enumerate(columns, start=1):
-            ttk.Label(self.table, text=col_name, font=("Segoe UI", 9, "bold"), wraplength=100).grid(
-                row=0, column=idx, padx=2, pady=2, sticky="nsew"
-            )
+            tk.Label(
+                self.table,
+                text=col_name,
+                font=("Segoe UI", 9, "bold"),
+                wraplength=110,
+                relief="ridge",
+                bd=1,
+                bg="#dfe6f0",
+            ).grid(row=0, column=idx, padx=0, pady=0, sticky="nsew")
 
-        for row_idx, day in enumerate(month_days(year, month), start=1):
+        days = month_days(year, month)
+        self._n_rows = len(days)
+        self._n_cols = len(columns)
+        for row_idx, day in enumerate(days, start=1):
             d = datetime.strptime(day, "%Y-%m-%d")
-            ttk.Label(self.table, text=d.strftime("%d/%m/%Y")).grid(row=row_idx, column=0, padx=2, pady=1, sticky="nsew")
+            weekend = d.weekday() >= 5
+            tk.Label(
+                self.table,
+                text=d.strftime("%d/%m/%Y"),
+                relief="ridge",
+                bd=1,
+                bg="#eef0f5" if not weekend else "#ffe9d6",
+                anchor="w",
+                padx=4,
+            ).grid(row=row_idx, column=0, padx=0, pady=0, sticky="nsew")
             for col_idx, (_vac_code, _col_name, key) in enumerate(columns, start=1):
                 assignment = get_assignment(self.entries, day, key)
-                text = assignment.display_name() or "—"
-                btn = ttk.Button(
+                var = tk.StringVar(value=assignment.display_name())
+                entry = tk.Entry(
                     self.table,
-                    text=text,
-                    width=14,
-                    command=lambda d=day, k=key: self._edit_cell(d, k),
+                    textvariable=var,
+                    width=16,
+                    relief="solid",
+                    bd=1,
+                    bg="#ffffff" if not weekend else "#fff6ee",
                 )
-                btn.grid(row=row_idx, column=col_idx, padx=1, pady=1, sticky="nsew")
+                entry.grid(row=row_idx, column=col_idx, padx=0, pady=0, sticky="nsew")
+                pos = (row_idx - 1, col_idx - 1)
+                self._cells[pos] = {"entry": entry, "var": var, "day": day, "key": key, "orig": var.get()}
+                entry.bind("<FocusOut>", lambda e, p=pos: self._commit_cell(p))
+                entry.bind("<Return>", lambda e, p=pos: self._move(p, 1, 0))
+                entry.bind("<Down>", lambda e, p=pos: self._move(p, 1, 0))
+                entry.bind("<Up>", lambda e, p=pos: self._move(p, -1, 0))
+                entry.bind("<Tab>", lambda e, p=pos: self._move(p, 0, 1))
+                entry.bind("<Shift-Tab>", lambda e, p=pos: self._move(p, 0, -1))
+                entry.bind("<ISO_Left_Tab>", lambda e, p=pos: self._move(p, 0, -1))
+                entry.bind("<Double-Button-1>", lambda e, p=pos: self._open_editor(p))
 
-    def _edit_cell(self, day: str, key: str) -> None:
-        assignment = get_assignment(self.entries, day, key)
+    @staticmethod
+    def _parse_cell_text(text: str) -> tuple[str, str]:
+        text = text.strip()
+        status = "normal"
+        for prefix, st in (("[A]", "absence"), ("[R]", "retard"), ("[C]", "conge")):
+            if text.upper().startswith(prefix):
+                status = st
+                text = text[len(prefix):].strip()
+                break
+        return text, status
+
+    def _commit_cell(self, pos: tuple[int, int]) -> None:
+        cell = self._cells.get(pos)
+        if not cell:
+            return
+        value = cell["var"].get().strip()
+        if value == cell["orig"]:
+            return
+        person, status = self._parse_cell_text(value)
+        assignment = get_assignment(self.entries, cell["day"], cell["key"])
+        assignment.person = person
+        assignment.status = status
+        assignment.replacement = ""
+        set_assignment(self.entries, cell["day"], cell["key"], assignment)
+        cell["var"].set(assignment.display_name())
+        cell["orig"] = cell["var"].get()
+        self._persist()
+
+    def _move(self, pos: tuple[int, int], dr: int, dc: int) -> str:
+        self._commit_cell(pos)
+        r, c = pos
+        nr, nc = r + dr, c + dc
+        if nc < 0:
+            nc, nr = self._n_cols - 1, nr - 1
+        elif nc >= self._n_cols:
+            nc, nr = 0, nr + 1
+        nr = max(0, min(self._n_rows - 1, nr))
+        target = self._cells.get((nr, nc))
+        if target:
+            target["entry"].focus_set()
+            target["entry"].selection_range(0, "end")
+        return "break"
+
+    def _open_editor(self, pos: tuple[int, int]) -> str:
+        cell = self._cells.get(pos)
+        if not cell:
+            return "break"
+        self._commit_cell(pos)
+        assignment = get_assignment(self.entries, cell["day"], cell["key"])
         dialog = CellEditor(self, self.config, assignment)
         self.wait_window(dialog)
         if dialog.result is not None:
-            set_assignment(self.entries, day, key, dialog.result)
-            self._render_table()
+            set_assignment(self.entries, cell["day"], cell["key"], dialog.result)
+            cell["var"].set(dialog.result.display_name())
+            cell["orig"] = cell["var"].get()
+            self._persist()
+        return "break"
+
+    def _persist(self) -> None:
+        service_id = self.get_service_id()
+        year, month = self.get_period()
+        save_garde(
+            {
+                "service_id": service_id,
+                "year": year,
+                "month": month,
+                "entries": self.entries,
+            }
+        )
 
     def export_excel(self) -> None:
         service_id = self.get_service_id()
