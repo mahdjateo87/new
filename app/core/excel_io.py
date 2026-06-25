@@ -75,30 +75,42 @@ def export_garde_excel(
 
     columns = iter_service_columns(service)
     start_row = 8
+    ws.merge_cells(start_row=start_row, start_column=1, end_row=start_row + 2, end_column=1)
     ws.cell(start_row, 1, "DATE")
     _style_header(ws.cell(start_row, 1))
 
     col_index = 2
-    vacation_spans: list[tuple[str, int, int]] = []
     for vacation in service.get("vacations", []):
         code = vacation["code"]
         cols = vacation.get("colonnes", [])
         if not cols:
             continue
         start_col = col_index
-        label = config.vacation_label(code)
+        label = vacation.get("label") or config.vacation_label(code)
         if len(cols) > 1:
-            ws.merge_cells(start_row=start_row, start_column=start_col, end_row=start_row, end_column=start_col + len(cols) - 1)
+            ws.merge_cells(
+                start_row=start_row,
+                start_column=start_col,
+                end_row=start_row,
+                end_column=start_col + len(cols) - 1,
+            )
         ws.cell(start_row, start_col, label)
         _style_header(ws.cell(start_row, start_col))
+
         for sub_col in cols:
-            ws.cell(start_row + 1, col_index, sub_col)
+            if " - " in sub_col:
+                groupe, poste = sub_col.split(" - ", 1)
+                ws.cell(start_row + 1, col_index, groupe.strip())
+                ws.cell(start_row + 2, col_index, poste.strip())
+            else:
+                ws.cell(start_row + 1, col_index, sub_col)
+                ws.cell(start_row + 2, col_index, "")
             _style_header(ws.cell(start_row + 1, col_index))
+            _style_header(ws.cell(start_row + 2, col_index))
             col_index += 1
-        vacation_spans.append((code, start_col, col_index - 1))
 
     entries = garde_data.get("entries", {})
-    row = start_row + 2
+    row = start_row + 3
     for day_str in month_days(year, month):
         y, m, d = map(int, day_str.split("-"))
         ws.cell(row, 1, date(y, m, d))
@@ -290,7 +302,14 @@ def import_garde_excel(path: Path, config: AppConfig, service_id: str | None = N
     if header_row is None:
         raise ValueError("Impossible de trouver l'en-tête DATE dans le fichier Excel.")
 
-    data_start = header_row + 2
+    header_lines = 2
+    if ws.cell(header_row + 1, 2).value and ws.cell(header_row + 2, 2).value:
+        second = str(ws.cell(header_row + 1, 2).value).lower().strip()
+        third = str(ws.cell(header_row + 2, 2).value).lower().strip()
+        if second in ("mat", "chir") and ("salle" in third or third.replace(" ", "").isalnum()):
+            header_lines = 3
+
+    data_start = header_row + header_lines
     max_row = ws.max_row
 
     col_map: dict[int, str] = {}

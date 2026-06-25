@@ -17,6 +17,22 @@ Application de gestion des listes de garde pour le bloc opératoire de la **Clin
 
 ## Installation sur Windows
 
+📖 **Guide détaillé pas à pas : voir [GUIDE_INSTALLATION.md](GUIDE_INSTALLATION.md)**
+
+### Démonstration rapide (sans interface graphique)
+
+```bash
+pip install -r requirements.txt
+python demo.py
+```
+
+### Lancer l'application complète
+
+```bash
+pip install -r requirements.txt
+python app/main.py
+```
+
 ### Option 1 — Installateur (recommandé)
 
 1. Copiez le dossier `installer` sur votre PC (ou clé USB)

@@ -37,11 +37,21 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "colonnes": ["mat", "chir salle 1", "chir salle 2", "chir salle 3"],
+                "label": "Journalier 08H - 16H",
+                "colonnes": [
+                    "mat - salle 4",
+                    "chir - salle 1",
+                    "chir - salle 2",
+                    "chir - salle 3",
+                ],
             },
             {
                 "code": "16H08H",
-                "colonnes": ["mat", "chir"],
+                "label": "Nuit 16H - 08H",
+                "colonnes": [
+                    "mat - salle 4",
+                    "chir",
+                ],
             },
         ],
     },
@@ -51,11 +61,19 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "colonnes": ["poste 1", "poste 2"],
+                "label": "Journalier 08H - 16H",
+                "colonnes": [
+                    "mat",
+                    "chir",
+                ],
             },
             {
                 "code": "16H08H",
-                "colonnes": ["nuit"],
+                "label": "Nuit 16H - 08H",
+                "colonnes": [
+                    "mat",
+                    "chir",
+                ],
             },
         ],
     },
@@ -65,11 +83,31 @@ DEFAULT_SERVICES = [
         "vacations": [
             {
                 "code": "08H16H",
-                "colonnes": ["stérilisation"],
+                "label": "Journalier 08H - 16H",
+                "colonnes": [
+                    "jour 08H-16H",
+                ],
+            },
+            {
+                "code": "16H08H",
+                "label": "Nuit 16H - 08H",
+                "colonnes": [
+                    "nuit 16H-08H",
+                ],
+            },
+            {
+                "code": "24H",
+                "label": "24H",
+                "colonnes": [
+                    "24H",
+                ],
             },
             {
                 "code": "2SUR2",
-                "colonnes": ["2 sur 2"],
+                "label": "2 sur 2",
+                "colonnes": [
+                    "2 sur 2",
+                ],
             },
         ],
     },
