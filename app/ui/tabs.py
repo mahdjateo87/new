@@ -10,9 +10,28 @@ from app.core.config import MONTHS_FR, STATUS_LABELS, VACATION_TYPES
 from app.core.excel_io import export_comptage_excel, export_garde_excel, import_garde_excel
 from app.core.models import AppConfig, Assignment
 from app.core.pdf_forms import generate_demande_conge_pdf, generate_planning_conge_pdf
-from app.core.stats import compute_month_stats, get_assignment, iter_service_columns, month_days, month_title, set_assignment
+from app.core.stats import (
+    cell_key,
+    compute_month_stats,
+    get_assignment,
+    month_days,
+    month_title,
+    set_assignment,
+)
 from app.core.storage import load_conges, load_garde, load_personnel, save_conges, save_garde, save_personnel
 from app.core.utils import open_file, print_file, send_email_with_attachments
+
+# Couleurs des bandes de catégories (en-tete groupe), façon Excel : (fond, texte).
+VACATION_HEADER_COLORS: dict[str, tuple[str, str]] = {
+    "08H16H": ("#36a8e0", "white"),   # Journalier - bleu
+    "16H08H": ("#f5a623", "white"),   # Nuit - orange
+    "24H": ("#ffd000", "black"),      # 24H - jaune
+    "16H22H": ("#f6b26b", "black"),
+    "2SUR2": ("#9fc5e8", "black"),
+    "2JOUROFF": ("#d9d9d9", "black"),
+    "2JOURON": ("#b6d7a8", "black"),
+}
+_DEFAULT_HEADER_COLOR = ("#dfe6f0", "black")
 
 
 class GardeTab(ttk.Frame):
@@ -94,25 +113,50 @@ class GardeTab(ttk.Frame):
         if not service:
             return
 
-        columns = iter_service_columns(service)
+        # En-tete sur 2 niveaux, façon Excel :
+        #   ligne 0 = bandes de categories colorees (Journalier / 24H / Nuit ...)
+        #   ligne 1 = nom de chaque colonne
         tk.Label(
             self.table, text="Date", font=("Segoe UI", 10, "bold"), relief="ridge", bd=1, bg="#dfe6f0"
-        ).grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        for idx, (_code, col_name, _key) in enumerate(columns, start=1):
+        ).grid(row=0, column=0, rowspan=2, padx=0, pady=0, sticky="nsew")
+
+        flat: list[tuple[str, str, str]] = []
+        col = 1
+        for vacation in service.get("vacations", []):
+            cols = vacation.get("colonnes", [])
+            if not cols:
+                continue
+            code = vacation["code"]
+            label = vacation.get("label") or self.config.vacation_label(code)
+            bg, fg = VACATION_HEADER_COLORS.get(code, _DEFAULT_HEADER_COLOR)
             tk.Label(
                 self.table,
-                text=col_name,
-                font=("Segoe UI", 9, "bold"),
-                wraplength=110,
+                text=str(label).upper(),
+                font=("Segoe UI", 10, "bold"),
+                bg=bg,
+                fg=fg,
                 relief="ridge",
                 bd=1,
-                bg="#dfe6f0",
-            ).grid(row=0, column=idx, padx=0, pady=0, sticky="nsew")
+                pady=3,
+            ).grid(row=0, column=col, columnspan=len(cols), padx=0, pady=0, sticky="nsew")
+            for col_name in cols:
+                tk.Label(
+                    self.table,
+                    text=col_name,
+                    font=("Segoe UI", 9, "bold"),
+                    wraplength=110,
+                    relief="ridge",
+                    bd=1,
+                    bg="#eef0f5",
+                ).grid(row=1, column=col, padx=0, pady=0, sticky="nsew")
+                flat.append((code, col_name, cell_key(code, col_name)))
+                col += 1
 
         days = month_days(year, month)
         self._n_rows = len(days)
-        self._n_cols = len(columns)
-        for row_idx, day in enumerate(days, start=1):
+        self._n_cols = len(flat)
+        for d_row, day in enumerate(days):
+            grid_row = d_row + 2
             d = datetime.strptime(day, "%Y-%m-%d")
             weekend = d.weekday() >= 5
             tk.Label(
@@ -123,8 +167,8 @@ class GardeTab(ttk.Frame):
                 bg="#eef0f5" if not weekend else "#ffe9d6",
                 anchor="w",
                 padx=4,
-            ).grid(row=row_idx, column=0, padx=0, pady=0, sticky="nsew")
-            for col_idx, (_vac_code, _col_name, key) in enumerate(columns, start=1):
+            ).grid(row=grid_row, column=0, padx=0, pady=0, sticky="nsew")
+            for d_col, (_vac_code, _col_name, key) in enumerate(flat):
                 assignment = get_assignment(self.entries, day, key)
                 var = tk.StringVar(value=assignment.display_name())
                 entry = tk.Entry(
@@ -135,8 +179,8 @@ class GardeTab(ttk.Frame):
                     bd=1,
                     bg="#ffffff" if not weekend else "#fff6ee",
                 )
-                entry.grid(row=row_idx, column=col_idx, padx=0, pady=0, sticky="nsew")
-                pos = (row_idx - 1, col_idx - 1)
+                entry.grid(row=grid_row, column=d_col + 1, padx=0, pady=0, sticky="nsew")
+                pos = (d_row, d_col)
                 self._cells[pos] = {"entry": entry, "var": var, "day": day, "key": key, "orig": var.get()}
                 entry.bind("<FocusIn>", lambda e, en=entry: self.after_idle(lambda: self._select_all(en)))
                 entry.bind("<FocusOut>", lambda e, p=pos: self._commit_cell(p))
