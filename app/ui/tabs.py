@@ -35,6 +35,9 @@ VACATION_HEADER_COLORS: dict[str, tuple[str, str]] = {
 }
 _DEFAULT_HEADER_COLOR = ("#dfe6f0", "black")
 
+# Abreviations des jours (sans dependance a la locale du systeme).
+WEEKDAYS_FR_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+
 
 class GardeTab(ttk.Frame):
     def __init__(self, master, config: AppConfig, get_service_id, get_period):
@@ -50,6 +53,7 @@ class GardeTab(ttk.Frame):
         toolbar.pack(fill="x", padx=8, pady=8)
         ttk.Button(toolbar, text="Charger", command=self.load_data).pack(side="left", padx=4)
         ttk.Button(toolbar, text="Enregistrer", command=self.save_data).pack(side="left", padx=4)
+        ttk.Button(toolbar, text="Copier mois précédent", command=self.copy_previous_month).pack(side="left", padx=4)
         ttk.Button(toolbar, text="Exporter Excel", command=self.export_excel).pack(side="left", padx=4)
         ttk.Button(toolbar, text="Importer Excel", command=self.import_excel).pack(side="left", padx=4)
         ttk.Button(toolbar, text="Imprimer", command=self.print_garde).pack(side="left", padx=4)
@@ -104,6 +108,36 @@ class GardeTab(ttk.Frame):
         )
         messagebox.showinfo("Enregistré", "La liste de garde a été enregistrée.")
 
+    def copy_previous_month(self) -> None:
+        service_id = self.get_service_id()
+        year, month = self.get_period()
+        prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+        prev = load_garde(service_id, prev_year, prev_month)
+        prev_entries = prev.get("entries", {})
+        if not prev_entries:
+            messagebox.showinfo(
+                "Copier",
+                f"Aucune liste enregistrée pour {month_title(prev_month)} {prev_year}.",
+            )
+            return
+        if self.entries and not messagebox.askyesno(
+            "Copier",
+            f"Remplacer la liste actuelle par celle de {month_title(prev_month)} {prev_year} ?",
+        ):
+            return
+        last_day = calendar.monthrange(year, month)[1]
+        new_entries: dict[str, Any] = {}
+        for day_str, cols in prev_entries.items():
+            day_num = int(day_str.split("-")[2])
+            if day_num <= last_day:
+                new_entries[f"{year}-{month:02d}-{day_num:02d}"] = deepcopy(cols)
+        self.entries = new_entries
+        self._render_table()
+        self._persist()
+        messagebox.showinfo(
+            "Copier", f"Liste copiée depuis {month_title(prev_month)} {prev_year}."
+        )
+
     def _render_table(self) -> None:
         for child in self.table.winfo_children():
             child.destroy()
@@ -157,16 +191,25 @@ class GardeTab(ttk.Frame):
         days = month_days(year, month)
         self._n_rows = len(days)
         self._n_cols = len(flat)
+        today = datetime.now().strftime("%Y-%m-%d")
         for d_row, day in enumerate(days):
             grid_row = d_row + 2
             d = datetime.strptime(day, "%Y-%m-%d")
             weekend = d.weekday() >= 5
+            is_today = day == today
+            if is_today:
+                date_bg = "#fff2a8"
+            elif weekend:
+                date_bg = "#ffe9d6"
+            else:
+                date_bg = "#eef0f5"
             tk.Label(
                 self.table,
-                text=d.strftime("%d/%m/%Y"),
+                text=f"{WEEKDAYS_FR_SHORT[d.weekday()]} {d.strftime('%d/%m/%Y')}",
+                font=("Segoe UI", 9, "bold" if is_today else "normal"),
                 relief="ridge",
                 bd=1,
-                bg="#eef0f5" if not weekend else "#ffe9d6",
+                bg=date_bg,
                 anchor="w",
                 padx=4,
             ).grid(row=grid_row, column=0, padx=0, pady=0, sticky="nsew")
